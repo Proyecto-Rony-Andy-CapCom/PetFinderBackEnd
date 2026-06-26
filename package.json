@@ -1,0 +1,27 @@
+{
+  "name": "petfinderbackend",
+  "version": "1.0.0",
+  "description": "Pet Finder\r \"# PetFinderBackEnd\"",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proyecto-Rony-Andy-CapCom/PetFinderBackEnd.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Proyecto-Rony-Andy-CapCom/PetFinderBackEnd/issues"
+  },
+  "homepage": "https://github.com/Proyecto-Rony-Andy-CapCom/PetFinderBackEnd#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^21.1.0",
+    "@commitlint/config-conventional": "^21.1.0",
+    "husky": "^9.1.7"
+  }
+}

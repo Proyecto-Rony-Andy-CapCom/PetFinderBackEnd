@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Node dependencies for Husky
+node_modules/
