@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: petfinder-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - database
+    environment:
+      # Spring Boot tomará estas variables de entorno automáticamente
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/petfinder_db
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=rootpassword
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+  database:
+    image: postgres:15-alpine
+    container_name: petfinder-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=petfinder_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=rootpassword
+    volumes:
+      # Esto asegura que los datos no se borren si apagas el contenedor
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
