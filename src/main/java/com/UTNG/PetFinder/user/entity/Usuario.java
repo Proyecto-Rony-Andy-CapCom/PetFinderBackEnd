@@ -8,6 +8,11 @@ import com.UTNG.PetFinder.auth.entity.EstadoCuenta;
 import com.UTNG.PetFinder.auth.entity.TipoCuenta;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "usuarios")
@@ -15,7 +20,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Usuario {
+public class Usuario implements UserDetails {
 
     @Id
     @GeneratedValue
@@ -89,4 +94,29 @@ public class Usuario {
     protected void onUpdate() {
         this.actualizadoEn = OffsetDateTime.now();
     }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Por ahora, devolvemos el rol basado en el enum TipoCuenta
+        return List.of(new SimpleGrantedAuthority("ROLE_" + tipoCuenta.name().toUpperCase()));
+    }
+
+    @Override
+    public String getPassword() {
+        return passwordHash; // Retornamos el campo de tu tabla
+    }
+
+    @Override
+    public String getUsername() {
+        return correo; // Usamos el correo como identificador único
+    }
+
+    @Override
+    public boolean isAccountNonExpired() { return true; }
+    @Override
+    public boolean isAccountNonLocked() { return true; }
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
+    @Override
+    public boolean isEnabled() { return true; }
 }
