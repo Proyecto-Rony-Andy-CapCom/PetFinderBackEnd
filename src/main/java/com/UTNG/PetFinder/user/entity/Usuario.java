@@ -11,6 +11,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "usuarios")
+@Data // <--- ESTA ES LA ANOTACIÓN QUE RESUELVE EL ERROR (Genera los Getters y Setters)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

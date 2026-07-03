@@ -128,7 +128,7 @@ CREATE TABLE mascotas (
     sexo            sexo_mascota NOT NULL DEFAULT 'desconocido',
     tamano          tamano_mascota,
     nombre          VARCHAR(100),
-    señas_particulares TEXT,
+    senas_particulares TEXT,
     edad_aproximada  SMALLINT,
     esterilizado    BOOLEAN,
     creado_en       TIMESTAMPTZ NOT NULL DEFAULT now()
