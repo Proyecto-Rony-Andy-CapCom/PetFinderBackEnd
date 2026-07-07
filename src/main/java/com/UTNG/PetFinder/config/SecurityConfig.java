@@ -3,6 +3,7 @@ package com.UTNG.PetFinder.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -22,91 +23,115 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
-@Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-    http
-        .csrf(csrf -> csrf.disable())
+        http
+            .csrf(csrf -> csrf.disable())
 
-        .authorizeHttpRequests(auth -> auth
+            // ── Conectamos la configuración de CORS al filtro de seguridad ──
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-            // ==========================
-            // RUTAS PUBLICAS
-            // ==========================
+            .authorizeHttpRequests(auth -> auth
 
-            .requestMatchers(
-                    "/api/auth/login",
-                    "/api/auth/register",
-                    "/api/auth/refresh"
-            ).permitAll()
+                // ==========================
+                // PREFLIGHT (CORS)
+                // ==========================
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                // ==========================
+                // RUTAS PUBLICAS
+                // ==========================
 
-            // ==========================
-            // RUTAS ADMIN
-            // ==========================
-
-            .requestMatchers("/api/admin/**")
-                    .hasRole("ADMIN")
-
-
-            // ==========================
-            // RUTAS REFUGIOS
-            // ==========================
-
-            .requestMatchers("/api/refugios/**")
-                    .hasAnyRole(
-                            "ADMIN",
-                            "REFUGIO"
-                    )
+                .requestMatchers(
+                        "/api/auth/login",
+                        "/api/usuarios/registro",
+                        "/api/auth/refresh"
+                ).permitAll()
 
 
-            // ==========================
-            // RUTAS USUARIOS
-            // ==========================
+                // ==========================
+                // RUTAS ADMIN
+                // ==========================
 
-            .requestMatchers(
-                    "/api/usuarios/perfil",
-                    "/api/usuarios/actualizar/**"
-            )
-                    .hasAnyRole(
-                            "ADMIN",
-                            "CIUDADANO"
-                    )
+                .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
 
 
-            // Todo lo demás requiere JWT
-            .anyRequest().authenticated()
-        )
+                // ==========================
+                // RUTAS REFUGIOS
+                // ==========================
+
+                .requestMatchers("/api/refugios/**")
+                        .hasAnyRole(
+                                "ADMIN",
+                                "REFUGIO"
+                        )
 
 
-        .sessionManagement(session ->
-                session.sessionCreationPolicy(
-                        SessionCreationPolicy.STATELESS
+                // ==========================
+                // RUTAS USUARIOS
+                // ==========================
+
+                .requestMatchers(
+                        "/api/usuarios/perfil",
+                        "/api/usuarios/actualizar/**"
                 )
-        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "CIUDADANO"
+                        )
 
-        .authenticationProvider(authenticationProvider)
 
-        .addFilterBefore(
-                jwtAuthFilter,
-                UsernamePasswordAuthenticationFilter.class
-        );
+                // ==========================
+                // RUTAS MASCOTAS
+                // ==========================
+
+                // Público: listado general de mascotas (sin autenticación)
+                .requestMatchers(HttpMethod.GET, "/api/mascotas/todas")
+                        .permitAll()
+
+                // Resto de rutas de mascotas: requieren estar autenticado con rol CIUDADANO (o ADMIN)
+                .requestMatchers("/api/mascotas/**")
+                        .hasAnyRole(
+                                "ADMIN",
+                                "CIUDADANO"
+                        )
+
+
+                // Todo lo demás requiere JWT
+                .anyRequest().authenticated()
+            )
+
+
+            .sessionManagement(session ->
+                    session.sessionCreationPolicy(
+                            SessionCreationPolicy.STATELESS
+                    )
+            )
+
+            .authenticationProvider(authenticationProvider)
+
+            .addFilterBefore(
+                    jwtAuthFilter,
+                    UsernamePasswordAuthenticationFilter.class
+            );
 
 
         return http.build();
     }
 
-    // ── 3. DEFINIMOS QUÉ ORÍGENES Y MÉTODOS TIENEN PERMISO ─────────────
+    // ── DEFINIMOS QUÉ ORÍGENES Y MÉTODOS TIENEN PERMISO ─────────────
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Le damos permiso explícito a tu frontend de Next.js
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); 
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
         // Permitimos todos los verbos HTTP necesarios
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         // Permitimos las cabeceras para que puedas enviar el token JWT después
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

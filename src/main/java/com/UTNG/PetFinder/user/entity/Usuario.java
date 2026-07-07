@@ -10,9 +10,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.UTNG.PetFinder.auth.entity.EstadoCuenta;
 import com.UTNG.PetFinder.auth.entity.TipoCuenta;
+import com.UTNG.PetFinder.pet.entity.Mascota;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -121,4 +124,13 @@ public class Usuario implements UserDetails {
     public boolean isCredentialsNonExpired() { return true; }
     @Override
     public boolean isEnabled() { return true; }
+
+    @OneToMany(
+        mappedBy = "usuario",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+)
+@Builder.Default
+private List<Mascota> mascotas = new ArrayList<>();
 }
