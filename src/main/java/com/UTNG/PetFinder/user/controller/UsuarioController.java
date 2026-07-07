@@ -1,14 +1,14 @@
 package com.UTNG.PetFinder.user.controller;
 
+import com.UTNG.PetFinder.user.dto.UsuarioActualizacionDTO;
 import com.UTNG.PetFinder.user.dto.UsuarioRegistroDTO;
 import com.UTNG.PetFinder.user.dto.UsuarioResponseDTO;
 import com.UTNG.PetFinder.user.service.UsuarioService;
-import com.UTNG.PetFinder.user.dto.UsuarioActualizacionDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.DeleteMapping;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -20,30 +20,56 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
+    /**
+     * Registro de nuevos usuarios.
+     * Endpoint público.
+     */
     @PostMapping("/registro")
-    public ResponseEntity<UsuarioResponseDTO> registrarUsuario(@Valid @RequestBody UsuarioRegistroDTO dto) {
+    public ResponseEntity<UsuarioResponseDTO> registrarUsuario(
+            @Valid @RequestBody UsuarioRegistroDTO dto) {
+
         UsuarioResponseDTO nuevoUsuario = usuarioService.registrarUsuario(dto);
-        return new ResponseEntity<>(nuevoUsuario, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> obtenerUsuario(@PathVariable java.util.UUID id) {
-        UsuarioResponseDTO usuario = usuarioService.obtenerUsuarioPorId(id);
-        return ResponseEntity.ok(usuario); // Devuelve un 200 OK con el JSON del perfil
+    /**
+     * Obtiene el perfil del usuario autenticado.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> obtenerMiPerfil(
+            Authentication authentication) {
+
+        UsuarioResponseDTO usuario =
+                usuarioService.obtenerMiPerfil(authentication.getName());
+
+        return ResponseEntity.ok(usuario);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> actualizarUsuario(
-            @PathVariable java.util.UUID id, 
-            @Valid @RequestBody UsuarioActualizacionDTO dto) {
-        
-        UsuarioResponseDTO usuarioActualizado = usuarioService.actualizarUsuario(id, dto);
+    /**
+     * Actualiza únicamente el perfil del usuario autenticado.
+     */
+    @PutMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> actualizarMiPerfil(
+            @Valid @RequestBody UsuarioActualizacionDTO dto,
+            Authentication authentication) {
+
+        UsuarioResponseDTO usuarioActualizado =
+                usuarioService.actualizarUsuario(
+                        dto,
+                        authentication.getName());
+
         return ResponseEntity.ok(usuarioActualizado);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarUsuario(@PathVariable java.util.UUID id) {
-        usuarioService.eliminarUsuario(id);
-        return ResponseEntity.noContent().build(); // Retorna código 204
+    /**
+     * Elimina (Soft Delete) únicamente la cuenta del usuario autenticado.
+     */
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> eliminarMiCuenta(
+            Authentication authentication) {
+
+        usuarioService.eliminarUsuario(authentication.getName());
+
+        return ResponseEntity.noContent().build();
     }
 }
