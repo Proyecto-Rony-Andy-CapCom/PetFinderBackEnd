@@ -4,11 +4,13 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import com.UTNG.PetFinder.auth.entity.EstadoCuenta;
-import com.UTNG.PetFinder.auth.entity.TipoCuenta;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.UTNG.PetFinder.auth.entity.EstadoCuenta;
+import com.UTNG.PetFinder.auth.entity.TipoCuenta;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.Collection;

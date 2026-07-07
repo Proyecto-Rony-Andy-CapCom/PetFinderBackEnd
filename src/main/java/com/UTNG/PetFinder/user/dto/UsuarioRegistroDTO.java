@@ -1,5 +1,7 @@
 package com.UTNG.PetFinder.user.dto;
 
+
+
 import com.UTNG.PetFinder.auth.entity.TipoCuenta;
 
 import jakarta.validation.constraints.Email;
