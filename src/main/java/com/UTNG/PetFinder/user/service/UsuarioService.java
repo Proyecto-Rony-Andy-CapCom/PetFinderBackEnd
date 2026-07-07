@@ -8,6 +8,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.UTNG.PetFinder.user.dto.UsuarioActualizacionDTO;
+import com.UTNG.PetFinder.auth.entity.EstadoCuenta;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 
 @Service
 public class UsuarioService {
@@ -45,39 +48,46 @@ public class UsuarioService {
                 .nombreCompleto(usuarioGuardado.getNombreCompleto())
                 .correo(usuarioGuardado.getCorreo())
                 .telefono(usuarioGuardado.getTelefono())
-                .tipoCuenta(usuarioGuardado.getTipoCuenta().name())
+                .tipoCuenta(usuarioGuardado.getTipoCuenta())
                 .estado(usuarioGuardado.getEstado().name())
                 .fechaRegistro(usuarioGuardado.getFechaRegistro())
                 .build();
     }
 
-    public UsuarioResponseDTO obtenerUsuarioPorId(java.util.UUID id) {
-        // Buscamos el usuario. Si no existe, lanzamos un error que luego podemos manejar
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con el ID: " + id));
+    public UsuarioResponseDTO obtenerMiPerfil(String correoAutenticado) {
 
-        // Reutilizamos el patrón Builder para devolver la información limpia
+        Usuario usuario = usuarioRepository.findByCorreoIgnoreCase(correoAutenticado)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
         return UsuarioResponseDTO.builder()
                 .id(usuario.getId())
                 .nombreCompleto(usuario.getNombreCompleto())
                 .correo(usuario.getCorreo())
                 .telefono(usuario.getTelefono())
-                .tipoCuenta(usuario.getTipoCuenta().name())
+                .tipoCuenta(usuario.getTipoCuenta())
                 .estado(usuario.getEstado().name())
                 .fechaRegistro(usuario.getFechaRegistro())
                 .build();
     }
 
     @Transactional
-    public UsuarioResponseDTO actualizarUsuario(java.util.UUID id, UsuarioActualizacionDTO dto) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con el ID: " + id));
+    public UsuarioResponseDTO actualizarUsuario(
+            UsuarioActualizacionDTO dto,
+            String correoAutenticado) {
 
-        // Actualizamos solo si el frontend nos envió un dato nuevo
+        Usuario usuario = usuarioRepository.findByCorreoIgnoreCase(correoAutenticado)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con el correo"));
+
+        // Protección contra BOLA
+        if (!usuario.getCorreo().equals(correoAutenticado)) {
+            throw new AccessDeniedException(
+                    "No tienes permisos para modificar este usuario");
+        }
+
         if (dto.getNombreCompleto() != null && !dto.getNombreCompleto().isBlank()) {
             usuario.setNombreCompleto(dto.getNombreCompleto());
         }
-        
+
         if (dto.getTelefono() != null) {
             usuario.setTelefono(dto.getTelefono());
         }
@@ -87,23 +97,23 @@ public class UsuarioService {
                 .nombreCompleto(usuario.getNombreCompleto())
                 .correo(usuario.getCorreo())
                 .telefono(usuario.getTelefono())
-                .tipoCuenta(usuario.getTipoCuenta().name())
+                .tipoCuenta(usuario.getTipoCuenta())
                 .estado(usuario.getEstado().name())
                 .fechaRegistro(usuario.getFechaRegistro())
                 .build();
     }
 
     @Transactional
-    public void eliminarUsuario(java.util.UUID id) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con el ID: " + id));
+    public void eliminarUsuario(String correoAutenticado) {
+        Usuario usuario = usuarioRepository.findByCorreoIgnoreCase(correoAutenticado)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con el correo: " + correoAutenticado));
 
         // Aplicamos el borrado lógico (Soft Delete)
         usuario.setAnonimizado(true);
         usuario.setEliminadoEn(java.time.OffsetDateTime.now());
-        // Asegúrate de importar tu enum EstadoCuenta si no lo tienes importado en este archivo
-        usuario.setEstado(com.UTNG.PetFinder.auth.entity.EstadoCuenta.eliminada);
+        usuario.setEstado(EstadoCuenta.eliminada);
 
-        // Al usar @Transactional, Hibernate hará el UPDATE de estos 3 campos automáticamente
+        // Al usar @Transactional, Hibernate hará el UPDATE de estos 3 campos
+        // automáticamente
     }
 }
