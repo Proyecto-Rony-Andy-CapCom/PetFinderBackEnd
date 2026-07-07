@@ -1,5 +1,7 @@
 package com.UTNG.PetFinder.user.dto;
 
+import com.UTNG.PetFinder.auth.entity.TipoCuenta;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -30,5 +32,5 @@ public class UsuarioRegistroDTO {
     private String telefono;
     
     // Opcional: Si no lo envían, el backend asignará 'ciudadano' por defecto
-    private String tipoCuenta;
+    private TipoCuenta tipoCuenta;
 }

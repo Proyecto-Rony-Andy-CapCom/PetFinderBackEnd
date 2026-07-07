@@ -18,18 +18,77 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable()) // Deshabilitamos CSRF porque usamos JWT
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/usuarios/registro").permitAll() // Rutas públicas
-                .anyRequest().authenticated() // Todo lo demás requiere login
-            )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authenticationProvider(authenticationProvider)
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        return http.build();
-    }
+    http
+        .csrf(csrf -> csrf.disable())
+
+        .authorizeHttpRequests(auth -> auth
+
+            // ==========================
+            // RUTAS PUBLICAS
+            // ==========================
+
+            .requestMatchers(
+                    "/api/auth/login",
+                    "/api/auth/register",
+                    "/api/auth/refresh"
+            ).permitAll()
+
+
+            // ==========================
+            // RUTAS ADMIN
+            // ==========================
+
+            .requestMatchers("/api/admin/**")
+                    .hasRole("ADMIN")
+
+
+            // ==========================
+            // RUTAS REFUGIOS
+            // ==========================
+
+            .requestMatchers("/api/refugios/**")
+                    .hasAnyRole(
+                            "ADMIN",
+                            "REFUGIO"
+                    )
+
+
+            // ==========================
+            // RUTAS USUARIOS
+            // ==========================
+
+            .requestMatchers(
+                    "/api/usuarios/perfil",
+                    "/api/usuarios/actualizar/**"
+            )
+                    .hasAnyRole(
+                            "ADMIN",
+                            "CIUDADANO"
+                    )
+
+
+            // Todo lo demás requiere JWT
+            .anyRequest().authenticated()
+        )
+
+
+        .sessionManagement(session ->
+                session.sessionCreationPolicy(
+                        SessionCreationPolicy.STATELESS
+                )
+        )
+
+        .authenticationProvider(authenticationProvider)
+
+        .addFilterBefore(
+                jwtAuthFilter,
+                UsernamePasswordAuthenticationFilter.class
+        );
+
+
+    return http.build();
+}
 }

@@ -21,8 +21,10 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+
 
     @Override
     protected void doFilterInternal(
@@ -30,32 +32,78 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
 
-        // Si no hay token, dejamos pasar la petición a los siguientes filtros (donde se decidirá si tiene acceso)
+
+        /*
+         * Espera:
+         *
+         * Authorization: Bearer ACCESS_TOKEN
+         *
+         */
+        final String authHeader = request.getHeader("Authorization");
+
+
+        // Si no existe header Authorization continuamos
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7); // Quitamos el "Bearer "
-        // Nota: Aquí necesitaremos un método en JwtService para extraer el username del token
-        userEmail = jwtService.extractUsername(jwt); 
 
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-            
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities()
+        // Quitamos "Bearer "
+        final String jwt = authHeader.substring(7);
+
+
+        // Extraemos el correo del usuario desde el JWT
+        final String userEmail = jwtService.extractUsername(jwt);
+
+
+        /*
+         * Si existe usuario y todavía no hay autenticación
+         * en el contexto de Spring Security
+         */
+        if (
+                userEmail != null &&
+                SecurityContextHolder.getContext().getAuthentication() == null
+        ) {
+
+
+            UserDetails userDetails =
+                    userDetailsService.loadUserByUsername(userEmail);
+
+
+            /*
+             * IMPORTANTE:
+             *
+             * Aquí solamente aceptamos ACCESS TOKEN
+             *
+             * Un REFRESH TOKEN será rechazado
+             */
+            if (jwtService.isAccessTokenValid(jwt, userDetails)) {
+
+
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
+
+
+                authToken.setDetails(
+                        new WebAuthenticationDetailsSource()
+                                .buildDetails(request)
                 );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+
+
+                SecurityContextHolder
+                        .getContext()
+                        .setAuthentication(authToken);
             }
         }
+
+
         filterChain.doFilter(request, response);
     }
 }
