@@ -9,6 +9,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -20,36 +24,91 @@ public class SecurityConfig {
 
 @Bean
 public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
     http
         .csrf(csrf -> csrf.disable())
+
         .authorizeHttpRequests(auth -> auth
-            // Rutas públicas
+
+            // ==========================
+            // RUTAS PUBLICAS
+            // ==========================
+
             .requestMatchers(
-                "/api/auth/**",
-                "/api/usuarios/**"
+                    "/api/auth/login",
+                    "/api/auth/register",
+                    "/api/auth/refresh"
             ).permitAll()
 
-            // Solo ADMIN
-            .requestMatchers("/api/admin/**").hasRole("administrador")
+
+            // ==========================
+            // RUTAS ADMIN
+            // ==========================
+
+            .requestMatchers("/api/admin/**")
+                    .hasRole("ADMIN")
 
 
-            // ADMIN o REFUGIO
+            // ==========================
+            // RUTAS REFUGIOS
+            // ==========================
+
             .requestMatchers("/api/refugios/**")
-                .hasAnyRole("ADMIN", "REFUGIO")
+                    .hasAnyRole(
+                            "ADMIN",
+                            "REFUGIO"
+                    )
 
-            // ADMIN o CIUDADANO
-            .requestMatchers("/api/usuarios/**")
-                .hasAnyRole("ADMIN", "CIUDADANO")
 
-            // Cualquier otro endpoint requiere autenticación
+            // ==========================
+            // RUTAS USUARIOS
+            // ==========================
+
+            .requestMatchers(
+                    "/api/usuarios/perfil",
+                    "/api/usuarios/actualizar/**"
+            )
+                    .hasAnyRole(
+                            "ADMIN",
+                            "CIUDADANO"
+                    )
+
+
+            // Todo lo demás requiere JWT
             .anyRequest().authenticated()
         )
-        .sessionManagement(session ->
-            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        )
-        .authenticationProvider(authenticationProvider)
-        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-    return http.build();
-}
+
+        .sessionManagement(session ->
+                session.sessionCreationPolicy(
+                        SessionCreationPolicy.STATELESS
+                )
+        )
+
+        .authenticationProvider(authenticationProvider)
+
+        .addFilterBefore(
+                jwtAuthFilter,
+                UsernamePasswordAuthenticationFilter.class
+        );
+
+
+        return http.build();
+    }
+
+    // ── 3. DEFINIMOS QUÉ ORÍGENES Y MÉTODOS TIENEN PERMISO ─────────────
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Le damos permiso explícito a tu frontend de Next.js
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); 
+        // Permitimos todos los verbos HTTP necesarios
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Permitimos las cabeceras para que puedas enviar el token JWT después
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 }
