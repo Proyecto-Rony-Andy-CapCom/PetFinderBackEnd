@@ -121,18 +121,43 @@ CREATE TABLE colores (
 -- ----------------------------------------------------------------------------
 
 CREATE TABLE mascotas (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    especie_id      SMALLINT NOT NULL REFERENCES especies(id),
-    raza_id         INTEGER REFERENCES razas(id),
-    color_id        SMALLINT REFERENCES colores(id),
-    sexo            sexo_mascota NOT NULL DEFAULT 'desconocido',
-    tamano          tamano_mascota,
-    nombre          VARCHAR(100),
-    senas_particulares TEXT,
-    edad_aproximada  SMALLINT,
-    esterilizado    BOOLEAN,
-    creado_en       TIMESTAMPTZ NOT NULL DEFAULT now()
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    -- Propietario o responsable de la mascota
+    usuario_id          UUID NOT NULL
+                            REFERENCES usuarios(id)
+                            ON DELETE CASCADE,
+
+    especie_id          SMALLINT NOT NULL
+                            REFERENCES especies(id),
+
+    raza_id             INTEGER
+                            REFERENCES razas(id),
+
+    color_id            SMALLINT
+                            REFERENCES colores(id),
+
+    sexo                sexo_mascota NOT NULL DEFAULT 'desconocido',
+
+    tamano              tamano_mascota,
+
+    nombre              VARCHAR(100),
+
+    senas_particulares  TEXT,
+
+    edad_aproximada     SMALLINT,
+
+    esterilizado        BOOLEAN,
+
+    creado_en           TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    actualizado_en      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX idx_mascotas_usuario ON mascotas(usuario_id);
+CREATE INDEX idx_mascotas_especie ON mascotas(especie_id);
+CREATE INDEX idx_mascotas_raza ON mascotas(raza_id);
+CREATE INDEX idx_mascotas_color ON mascotas(color_id);
 
 CREATE TABLE reportes (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
